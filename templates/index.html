@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Planner</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>מתכנן לימודים AI</h1>
+                <p class="subtitle">עקוב אחרי מטלות, נהל תאריכי סיום, פרק משימות לשלבים</p>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="main">
+            <!-- Courses section header -->
+            <section class="courses-section">
+                <div class="section-header">
+                    <h2>הקורסים שלי</h2>
+                    <button class="btn btn-primary" id="addCourseBtn">+ קורס חדש</button>
+                </div>
+                <div class="courses-grid" id="coursesGrid">
+                    <!-- Courses will be rendered here by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Individual two-week overview -->
+            <section class="overview-section">
+                <h2>14 הימים הבאים</h2>
+                <div class="timeline" id="timeline">
+                    <!-- Timeline will be rendered here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Create Course Modal -->
+    <div class="modal" id="courseModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeCourseModal">&times;</button>
+            <div class="modal-header">
+                <h2>קורס חדש</h2>
+            </div>
+            <div class="modal-body">
+                <form id="courseForm">
+                    <div class="form-group">
+                        <label for="courseName">שם הקורס</label>
+                        <input type="text" id="courseName" placeholder="למשל, מערכות הפעלה" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">צור קורס</button>
+                    <button type="button" class="btn btn-secondary-outline" id="cancelCourseBtn">ביטול</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Assignment Modal -->
+    <div class="modal" id="assignmentModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeAssignmentModal">&times;</button>
+            <div class="modal-header">
+                <h2>מטלה חדשה</h2>
+                <p class="modal-subtitle" id="assignmentModalCourse"></p>
+            </div>
+            <div class="modal-body">
+                <form id="assignmentForm">
+                    <div class="form-group">
+                        <label for="assignmentTitle">שם המטלה</label>
+                        <input type="text" id="assignmentTitle" placeholder="למשל, תרגיל 2" required>
+                    </div>
+                    <div class="form-group">
+                        <label>תאריך סיום</label>
+                        <div class="date-picker-wrapper">
+                            <input type="text" id="assignmentDeadlineDisplay" class="date-picker-display" placeholder="בחר תאריך" readonly>
+                            <input type="hidden" id="assignmentDeadline" required>
+                            <div class="calendar-picker" id="calendarPicker">
+                                <div class="calendar-header">
+                                    <button type="button" class="calendar-nav" id="prevMonth">&lt;</button>
+                                    <h3 id="calendarMonth"></h3>
+                                    <button type="button" class="calendar-nav" id="nextMonth">&gt;</button>
+                                </div>
+                                <div class="calendar-weekdays">
+                                    <div>ראשון</div>
+                                    <div>שני</div>
+                                    <div>שלישי</div>
+                                    <div>רביעי</div>
+                                    <div>חמישי</div>
+                                    <div>שישי</div>
+                                    <div>שבת</div>
+                                </div>
+                                <div class="calendar-days" id="calendarDays"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignmentBrief">תיאור</label>
+                        <textarea id="assignmentBrief" placeholder="פרטי המטלה והדרישות (אופציונלי)" rows="4"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">צור מטלה</button>
+                    <button type="button" class="btn btn-secondary-outline" id="cancelAssignmentBtn">ביטול</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Detail Modal -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal">&times;</button>
+            
+            <div class="detail-header">
+                <div class="detail-header-title">
+                    <h2 id="detailTitle"></h2>
+                    <button class="btn btn-edit-header" id="editGeneralBtn" title="ערוך מידע"></button>
+                </div>
+                <p class="detail-course" id="detailCourse"></p>
+            </div>
+
+            <!-- General Info Edit Mode -->
+            <div class="detail-edit-mode" id="detailEditMode" style="display: none;">
+                <div class="detail-field">
+                    <label for="editTaskName">שם המטלה</label>
+                    <input type="text" id="editTaskName" class="edit-input">
+                </div>
+                <div class="detail-field">
+                    <label for="editTaskBrief">תיאור</label>
+                    <textarea id="editTaskBrief" class="edit-input edit-textarea" rows="3"></textarea>
+                </div>
+                <div class="detail-field">
+                    <label for="editTaskDeadline">תאריך סיום</label>
+                    <input type="date" id="editTaskDeadline" class="edit-input">
+                </div>
+                <div class="edit-buttons">
+                    <button class="btn btn-success" id="saveEditBtn">שמור</button>
+                    <button class="btn btn-secondary-outline" id="cancelEditBtn">ביטול</button>
+                </div>
+            </div>
+
+            <div class="detail-body">
+                <div class="detail-field">
+                    <label>תאריך סיום</label>
+                    <p id="detailDeadline"></p>
+                </div>
+
+                <div class="detail-field">
+                    <label>תיאור</label>
+                    <p id="detailBrief"></p>
+                </div>
+
+                <div class="detail-field">
+                    <label>התקדמות</label>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="detailProgress"></div>
+                        </div>
+                        <span class="progress-text" id="detailProgressText">0%</span>
+                    </div>
+                    <button class="btn btn-success" id="markDoneBtn">סמן כבוצע</button>
+                </div>
+
+                <div class="detail-field">
+                    <div class="steps-header">
+                        <label>שלבי עבודה</label>
+                        <button class="btn btn-edit-steps" id="editStepsBtn" title="ערוך שלבים"></button>
+                    </div>
+                    <ul class="steps-list" id="stepsList">
+                        <!-- Steps will be rendered here -->
+                    </ul>
+                    
+                    <button class="btn btn-secondary" id="generateStepsBtn">צור שלבים עם AI</button>
+                    
+                    <div class="steps-input-wrapper">
+                        <button type="button" class="btn btn-primary btn-add-step" id="addManualStepBtn">+</button>
+                        <input type="text" id="manualStepInput" class="manual-step-input" placeholder="הוסף שלב...">
+                    </div>
+                </div>
+                
+                <div class="detail-field">
+                    <button class="btn btn-danger" id="deleteTaskBtn">מחק מטלה</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="confirmDeleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>האם אתה בטוח?</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmDeleteMessage"></p>
+                <div class="confirm-buttons">
+                    <button class="btn btn-danger" id="confirmDeleteBtn">כן, מחק</button>
+                    <button class="btn btn-secondary-outline" id="cancelDeleteBtn">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>יוצר שלבים...</p>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
