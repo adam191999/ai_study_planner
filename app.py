@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 import json
 import os
 from openai import OpenAI
@@ -9,6 +9,35 @@ print("RUNNING FILE:", __file__)
 load_dotenv()
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+
+# user name and password check:
+APP_USERNAME = os.getenv("APP_USERNAME")
+APP_PASSWORD = os.getenv("APP_PASSWORD")
+
+
+def check_auth(username, password):
+    return username == APP_USERNAME and password == APP_PASSWORD
+
+
+def require_auth():
+    return Response(
+        "Authentication required",
+        401,
+        {"WWW-Authenticate": 'Basic realm="AI Study Planner"'}
+    )
+
+
+@app.before_request
+def protect_site():
+    if not APP_USERNAME or not APP_PASSWORD:
+        return None
+
+    auth = request.authorization
+
+    if not auth or not check_auth(auth.username, auth.password):
+        return require_auth()
+
+
 
 api_key = os.getenv('OPENAI_API_KEY')
 if not api_key:
